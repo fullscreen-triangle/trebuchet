@@ -1,0 +1,64 @@
+[workspace]
+members = [
+    "trebuchet-cli",
+    "trebuchet-core",
+    "microservices/heihachi",
+    "microservices/gospel",
+    "microservices/purpose",
+    "microservices/combine",
+    "python-bridge",
+    "wasm-frontend",
+    "communication/message-bus",
+    "communication/api-gateway",
+]
+
+[workspace.dependencies]
+# Core dependencies
+tokio = { version = "1.28", features = ["full"] }
+anyhow = "1.0"
+thiserror = "1.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+clap = { version = "4.3", features = ["derive"] }
+async-trait = "0.1"
+
+# Web and API dependencies
+axum = "0.6"
+reqwest = { version = "0.11", features = ["json"] }
+tower = "0.4"
+tower-http = { version = "0.4", features = ["cors"] }
+
+# Data processing
+ndarray = "0.15"
+rayon = "1.7"
+
+# Configuration
+config = "0.13"
+dotenv = "0.15"
+
+# Testing
+mockall = "0.11"
+criterion = "0.5"
+
+# Cross-language integration
+pyo3 = { version = "0.18", features = ["extension-module"] }
+wasm-bindgen = "0.2"
+js-sys = "0.3"
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+[profile.release]
+opt-level = 3
+debug = false
+lto = "thin"
+codegen-units = 1
+
+[profile.bench]
+opt-level = 3
+debug = false
+lto = "thin"
+codegen-units = 1

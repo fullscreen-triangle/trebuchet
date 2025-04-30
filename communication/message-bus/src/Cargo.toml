@@ -1,0 +1,14 @@
+[package]
+name = "message-bus"
+version = "0.1.0"
+edition = "2021"
+description = "Message bus component for Trebuchet"
+authors = ["Kundai Sachikonye"]
+license = "MIT"
+
+[dependencies]
+trebuchet-core = { path = "../../trebuchet-core" }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true }

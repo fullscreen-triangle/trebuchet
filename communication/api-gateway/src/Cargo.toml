@@ -1,0 +1,14 @@
+[package]
+name = "api-gateway"
+version = "0.1.0"
+edition = "2021"
+description = "API Gateway component for Trebuchet"
+authors = ["Kundai Sachikonye"]
+license = "MIT"
+
+[dependencies]
+trebuchet-core = { path = "../../trebuchet-core" }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true }

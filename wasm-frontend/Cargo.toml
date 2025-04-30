@@ -1,0 +1,19 @@
+[package]
+name = "wasm-frontend"
+version = "0.1.0"
+edition = "2021"
+description = "WebAssembly frontend for Trebuchet"
+authors = ["Kundai Sachikonye"]
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+trebuchet-core = { path = "../trebuchet-core" }
+wasm-bindgen = { workspace = true }
+js-sys = { workspace = true }
+serde = { workspace = true }
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"

@@ -1,0 +1,39 @@
+{
+  "name": "trebuchet-wasm-frontend",
+  "version": "0.1.0",
+  "description": "WASM frontend for Trebuchet high-performance AI microservices framework",
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "start": "webpack serve --open",
+    "test": "jest",
+    "lint": "eslint . --ext .js",
+    "format": "prettier --write \"**/*.{js,jsx,json,md}\""
+  },
+  "keywords": [
+    "rust",
+    "wasm",
+    "trebuchet",
+    "ai",
+    "microservices"
+  ],
+  "author": "Trebuchet Team",
+  "license": "MIT",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@wasm-tool/wasm-pack-plugin": "^1.6.0",
+    "css-loader": "^6.7.3",
+    "eslint": "^8.36.0",
+    "eslint-config-prettier": "^8.8.0",
+    "html-webpack-plugin": "^5.5.0",
+    "jest": "^29.5.0",
+    "prettier": "^2.8.7",
+    "style-loader": "^3.3.2",
+    "webpack": "^5.76.3",
+    "webpack-cli": "^5.0.1",
+    "webpack-dev-server": "^4.13.1"
+  }
+}

@@ -1,0 +1,20 @@
+[package]
+name = "moriarty"
+version = "0.1.0"
+edition = "2021"
+description = "Security and cryptography microservice for Trebuchet"
+authors = ["Kundai Sachikonye"]
+license = "MIT"
+
+[dependencies]
+trebuchet-core = { path = "../../trebuchet-core" }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+hex = "0.4.3"
+thiserror = { workspace = true }
+chrono = { version = "0.4", features = ["serde"] }
+rand = "0.8"
+async-trait = "0.1"

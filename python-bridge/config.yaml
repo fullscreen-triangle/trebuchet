@@ -1,0 +1,26 @@
+# Python bridge configuration
+version: "1.0"
+
+# Python environment
+python:
+  path: .venv/bin/python
+  libraries:
+    - numpy
+    - torch
+    - pandas
+    - scikit-learn
+
+# Interface settings
+interface:
+  type: pyo3
+  fallback: json-stdio
+
+# Model settings
+models:
+  cache_dir: .cache/models
+  allow_remote_loading: true
+
+# Security settings
+security:
+  allow_arbitrary_code: false
+  sandbox_execution: true 

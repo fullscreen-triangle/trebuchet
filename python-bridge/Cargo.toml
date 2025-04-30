@@ -1,0 +1,14 @@
+[package]
+name = "python-bridge"
+version = "0.1.0"
+edition = "2021"
+description = "Python interoperability bridge for Trebuchet"
+authors = ["Kundai Sachikonye"]
+license = "MIT"
+
+[dependencies]
+trebuchet-core = { path = "../trebuchet-core" }
+pyo3 = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true }

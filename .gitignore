@@ -1,0 +1,75 @@
+# Rust build artifacts
+/target/
+**/target/
+
+# Rust crate registry
+.cargo/registry/
+
+# Backup files
+**/*.rs.bk
+
+# Binaries
+**/*.exe
+**/*.dll
+**/*.so
+**/*.dylib
+
+# Coverage files
+*.profraw
+*.profdata
+coverage/
+
+# Debug symbols
+**/*.pdb
+
+# Cargo lock file (uncomment if developing an application, not a library)
+# Cargo.lock
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Editor and IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+logs/
+
+# Test data
+test_data/
+**/__pycache__/
+
+# Generated docs
+/doc/
+/docs/
+/book/
+
+# Custom build output
+/dist/
+/out/
+
+# Flamegraphs
+**/flamegraph.svg
+**/perf.data*
+
+# Benchmarking
+**/criterion/
+**/benches/target/
+
+# Local config overrides
+config.local.toml
+**/local.rs
+
+# Dependencies lock file for applications with vendored dependencies
+vendor/
+
+# Binary builds
+bin/

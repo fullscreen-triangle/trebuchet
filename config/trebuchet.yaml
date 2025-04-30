@@ -1,0 +1,52 @@
+# Trebuchet core configuration
+version: "1.0"
+
+# Environment settings
+environment: development
+
+# Logging configuration
+logging:
+  level: info
+  format: json
+  file: logs/trebuchet.log
+
+# Service configuration
+services:
+  heihachi:
+    enabled: true
+    threads: 4
+    buffer_size: 8192
+  
+  gospel:
+    enabled: true
+    threads: 4
+    
+  purpose:
+    enabled: true
+    batch_size: 1024
+    
+  combine:
+    enabled: true
+    model_registry: local
+
+# Communication settings
+communication:
+  message_bus:
+    type: tokio-channel
+    buffer_size: 1000
+    
+  api_gateway:
+    host: 127.0.0.1
+    port: 8080
+    cors_enabled: true
+    
+# Python interoperability
+python_bridge:
+  enabled: true
+  config_path: "python-bridge/config.yaml"
+  
+# WASM frontend
+wasm_frontend:
+  enabled: true
+  port: 8081
+  assets_path: "wasm-frontend/dist" 

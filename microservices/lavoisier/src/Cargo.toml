@@ -1,0 +1,22 @@
+[package]
+name = "lavoisier"
+version = "0.1.0"
+edition = "2021"
+description = "Chemistry analysis and simulation microservice for Trebuchet"
+authors = ["Kundai Sachikonye"]
+license = "MIT"     
+
+[dependencies]
+trebuchet-core = { path = "../../trebuchet-core" }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+async-trait = "0.1"
+ndarray = { workspace = true }
+rayon = { workspace = true }
+
+[dev-dependencies]
+tokio-test = "0.4"

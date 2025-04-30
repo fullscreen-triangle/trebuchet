@@ -1,0 +1,37 @@
+[package]
+name = "trebuchet-cli"
+version = "0.1.0"
+edition = "2021"
+description = "Command-line interface for the Trebuchet high-performance AI microservices framework"
+authors = ["Trebuchet Team"]
+license = "MIT"
+
+[dependencies]
+# Workspace dependencies
+tokio = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+clap = { workspace = true }
+config = { workspace = true }
+dotenv = { workspace = true }
+
+# Internal dependencies
+trebuchet-core = { path = "../trebuchet-core" }
+
+# CLI-specific dependencies
+dialoguer = "0.10"
+indicatif = "0.17"
+console = "0.15"
+tui = "0.19"
+crossterm = "0.26"
+comfy-table = "7.0"
+colored = "2.0"
+shellexpand = "3.1"
+rustyline = "12.0"
+
+[[bin]]
+name = "trebuchet"
+path = "src/main.rs"
