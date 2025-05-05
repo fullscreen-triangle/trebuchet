@@ -2,9 +2,12 @@
 name = "gospel"
 version = "0.1.0"
 edition = "2021"
-description = "Genomics analysis microservice for Trebuchet"
+description = "Natural Language Processing microservice for Trebuchet"
 authors = ["Kundai Sachikonye"]
 license = "MIT"
+
+[lib]
+path = "lib.rs"
 
 [dependencies]
 trebuchet-core = { path = "../../trebuchet-core" }
@@ -17,6 +20,9 @@ serde_json = { workspace = true }
 ndarray = { workspace = true }
 rayon = { workspace = true }
 rand = "0.8"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+regex = "1.5"
 
 [dev-dependencies]
 tokio = { workspace = true }

@@ -2,21 +2,40 @@
 name = "lavoisier"
 version = "0.1.0"
 edition = "2021"
-description = "Chemistry analysis and simulation microservice for Trebuchet"
+description = "High-performance mass spectrometry-based metabolomics data analysis microservice for Trebuchet"
 authors = ["Kundai Sachikonye"]
-license = "MIT"     
+license = "MIT"
+
+[lib]
+path = "lib.rs"
 
 [dependencies]
 trebuchet-core = { path = "../../trebuchet-core" }
 tokio = { workspace = true }
 anyhow = { workspace = true }
+thiserror = { workspace = true }
 tracing = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-thiserror = { workspace = true }
-async-trait = "0.1"
 ndarray = { workspace = true }
 rayon = { workspace = true }
+
+# Data handling and scientific computing
+zarr = "0.5"
+hdf5 = "0.8"
+nalgebra = "0.32"
+polars = { version = "0.34", features = ["lazy", "parquet"] }
+
+# ML and visualization
+tch = "0.14"                # PyTorch bindings
+plotters = "0.3"            # Plotting library
+imageproc = "0.23"          # Image processing
+image = "0.24"              # Image manipulation
+
+# Runtime and optimization
+num_cpus = "1.16"
+dashmap = "5.5"            # Concurrent hashmap
+lz4 = "1.24"               # Compression
 
 [dev-dependencies]
 tokio-test = "0.4"

@@ -6,6 +6,9 @@ description = "High-performance audio processing microservice for Trebuchet"
 authors = ["Kundai Sachikonye"]
 license = "MIT"
 
+[lib]
+path = "lib.rs"
+
 [dependencies]
 trebuchet-core = { path = "../../trebuchet-core" }
 tokio = { workspace = true }

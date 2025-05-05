@@ -1,5 +1,5 @@
 <h1 align="center">Trebuchet</h1>
-<p align="center"><em> When every step  is too much, when it feels like going to the Moon twice </em></p>
+<p align="center"><em> We pray that we are wrong </em></p>
 
 <p align="center">
   <img src="./trebuchet.png" alt="Trebuchet Logo" width="300"/>

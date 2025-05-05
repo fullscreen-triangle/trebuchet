@@ -1,226 +1,414 @@
 // microservices/gospel/src/lib.rs
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
+use tokio::sync::RwLock;
+use rayon::prelude::*;
+use std::path::Path;
+use std::fs;
 
-/// Represents a DNA sequence
+/// Text document for processing
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Sequence {
-    /// Identifier for the sequence
+pub struct Document {
+    /// Unique identifier for the document
     pub id: String,
-    /// The actual nucleotide sequence (A, C, G, T)
-    pub sequence: String,
+    /// Document title
+    pub title: String,
+    /// Document content
+    pub content: String,
+    /// Language of the document
+    pub language: String,
     /// Additional metadata
     pub metadata: HashMap<String, String>,
 }
 
-impl Sequence {
-    /// Create a new DNA sequence
-    pub fn new(id: impl Into<String>, sequence: impl Into<String>) -> Self {
+impl Document {
+    /// Create a new document
+    pub fn new(id: impl Into<String>, title: impl Into<String>, content: impl Into<String>) -> Self {
         Self {
             id: id.into(),
-            sequence: sequence.into(),
+            title: title.into(),
+            content: content.into(),
+            language: "en".to_string(),
             metadata: HashMap::new(),
         }
     }
     
-    /// Calculate GC content (percentage of G and C bases)
-    pub fn gc_content(&self) -> f64 {
-        let gc_count = self.sequence.chars()
-            .filter(|c| *c == 'G' || *c == 'C' || *c == 'g' || *c == 'c')
-            .count();
+    /// Get the word count of the document
+    pub fn word_count(&self) -> usize {
+        self.content
+            .split_whitespace()
+            .count()
+    }
+    
+    /// Get the character count of the document
+    pub fn char_count(&self) -> usize {
+        self.content.chars().count()
+    }
+    
+    /// Get the sentence count (approximate) of the document
+    pub fn sentence_count(&self) -> usize {
+        // Simple sentence splitting on ., !, ?
+        self.content
+            .split(|c| c == '.' || c == '!' || c == '?')
+            .filter(|s| !s.trim().is_empty())
+            .count()
+    }
+    
+    /// Extract keywords using a simple TF algorithm
+    pub fn extract_keywords(&self, stop_words: &HashSet<String>, max_keywords: usize) -> Vec<(String, usize)> {
+        let words: Vec<String> = self.content
+            .to_lowercase()
+            .split(|c: char| !c.is_alphanumeric())
+            .filter(|s| !s.is_empty() && !stop_words.contains(*s))
+            .map(String::from)
+            .collect();
             
-        if self.sequence.is_empty() {
+        let mut word_counts: HashMap<String, usize> = HashMap::new();
+        for word in words {
+            *word_counts.entry(word).or_insert(0) += 1;
+        }
+        
+        let mut keyword_counts: Vec<(String, usize)> = word_counts.into_iter().collect();
+        keyword_counts.sort_by(|a, b| b.1.cmp(&a.1));
+        
+        keyword_counts.truncate(max_keywords);
+        keyword_counts
+    }
+    
+    /// Calculate similarity with another document using Jaccard similarity
+    pub fn similarity(&self, other: &Document) -> f64 {
+        let words_self: HashSet<&str> = self.content
+            .to_lowercase()
+            .split_whitespace()
+            .collect();
+            
+        let words_other: HashSet<&str> = other.content
+            .to_lowercase()
+            .split_whitespace()
+            .collect();
+            
+        let intersection = words_self.intersection(&words_other).count();
+        let union = words_self.union(&words_other).count();
+        
+        if union == 0 {
             return 0.0;
         }
         
-        (gc_count as f64) / (self.sequence.len() as f64) * 100.0
-    }
-    
-    /// Count occurrences of each nucleotide
-    pub fn nucleotide_counts(&self) -> HashMap<char, usize> {
-        let mut counts = HashMap::new();
-        
-        for c in self.sequence.chars().map(|c| c.to_ascii_uppercase()) {
-            *counts.entry(c).or_insert(0) += 1;
-        }
-        
-        counts
-    }
-    
-    /// Find all occurrences of a specific motif
-    pub fn find_motif(&self, motif: &str) -> Vec<usize> {
-        let seq = self.sequence.as_bytes();
-        let motif = motif.as_bytes();
-        let mut positions = Vec::new();
-        
-        // Simple pattern matching (in production, you'd use faster algorithms)
-        for i in 0..=seq.len().saturating_sub(motif.len()) {
-            if &seq[i..i+motif.len()] == motif {
-                positions.push(i);
-            }
-        }
-        
-        positions
+        intersection as f64 / union as f64
     }
 }
 
-/// Represents a genomic variant
+/// Sentiment classification
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Sentiment {
+    /// Positive sentiment
+    Positive,
+    /// Neutral sentiment
+    Neutral,
+    /// Negative sentiment
+    Negative,
+}
+
+/// Language detection result
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Variant {
-    /// Chromosome name
-    pub chromosome: String,
-    /// Position (1-based)
-    pub position: u64,
-    /// Reference allele
-    pub reference: String,
-    /// Alternate allele
-    pub alternate: String,
-    /// Quality score
-    pub quality: f64,
-    /// Additional information
-    pub info: HashMap<String, String>,
+pub struct LanguageDetection {
+    /// Detected language code (ISO 639-1)
+    pub language: String,
+    /// Confidence score (0.0 to 1.0)
+    pub confidence: f64,
 }
 
-impl Variant {
-    /// Create a new variant
-    pub fn new(
-        chromosome: impl Into<String>,
-        position: u64,
-        reference: impl Into<String>,
-        alternate: impl Into<String>,
-        quality: f64,
-    ) -> Self {
+/// Text analysis results
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TextAnalysis {
+    /// Document ID
+    pub document_id: String,
+    /// Word count
+    pub word_count: usize,
+    /// Character count
+    pub char_count: usize,
+    /// Sentence count
+    pub sentence_count: usize,
+    /// Average words per sentence
+    pub avg_words_per_sentence: f64,
+    /// Detected language
+    pub language: LanguageDetection,
+    /// Detected sentiment
+    pub sentiment: Sentiment,
+    /// Extracted keywords with frequency
+    pub keywords: Vec<(String, usize)>,
+    /// Readability score (Flesch-Kincaid)
+    pub readability_score: f64,
+}
+
+/// NLP processor for text analysis and processing
+pub struct NlpProcessor {
+    /// Stop words for different languages
+    stop_words: HashMap<String, HashSet<String>>,
+    /// Sentiment lexicon (word -> score)
+    sentiment_lexicon: HashMap<String, f64>,
+}
+
+impl NlpProcessor {
+    /// Create a new NLP processor with default lexicons
+    pub fn new() -> Self {
+        let mut stop_words = HashMap::new();
+        let mut en_stop_words = HashSet::new();
+        
+        // Just a few common English stop words for demonstration
+        for word in &["the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "with", "by"] {
+            en_stop_words.insert(word.to_string());
+        }
+        
+        stop_words.insert("en".to_string(), en_stop_words);
+        
+        // Simple sentiment lexicon
+        let mut sentiment_lexicon = HashMap::new();
+        
+        // Positive words
+        for word in &["good", "great", "excellent", "happy", "best", "love", "wonderful"] {
+            sentiment_lexicon.insert(word.to_string(), 1.0);
+        }
+        
+        // Negative words
+        for word in &["bad", "worst", "terrible", "sad", "hate", "awful", "poor"] {
+            sentiment_lexicon.insert(word.to_string(), -1.0);
+        }
+        
         Self {
-            chromosome: chromosome.into(),
-            position,
-            reference: reference.into(),
-            alternate: alternate.into(),
-            quality,
-            info: HashMap::new(),
+            stop_words,
+            sentiment_lexicon,
         }
     }
     
-    /// Check if this is a SNP (Single Nucleotide Polymorphism)
-    pub fn is_snp(&self) -> bool {
-        self.reference.len() == 1 && self.alternate.len() == 1
-    }
-    
-    /// Check if this is an insertion
-    pub fn is_insertion(&self) -> bool {
-        self.reference.len() < self.alternate.len()
-    }
-    
-    /// Check if this is a deletion
-    pub fn is_deletion(&self) -> bool {
-        self.reference.len() > self.alternate.len()
-    }
-    
-    /// Get variant length difference (positive for insertions, negative for deletions)
-    pub fn length_diff(&self) -> i64 {
-        self.alternate.len() as i64 - self.reference.len() as i64
-    }
-}
-
-/// Genomics analyzer for sequence and variant analysis
-pub struct GenomicsAnalyzer;
-
-impl GenomicsAnalyzer {
-    /// Analyze a DNA sequence and extract features
-    pub fn analyze_sequence(sequence: &Sequence) -> Result<SequenceAnalysis> {
-        let gc = sequence.gc_content();
-        let counts = sequence.nucleotide_counts();
-        
-        // Calculate basic sequence properties
-        let length = sequence.sequence.len();
-        let has_n = sequence.sequence.contains('N') || sequence.sequence.contains('n');
-        
-        Ok(SequenceAnalysis {
-            sequence_id: sequence.id.clone(),
-            length,
-            gc_content: gc,
-            nucleotide_counts: counts,
-            has_ambiguous_bases: has_n,
-        })
-    }
-    
-    /// Batch analyze variants
-    pub fn analyze_variants(variants: &[Variant]) -> Result<VariantAnalysis> {
-        let total = variants.len();
-        if total == 0 {
-            return Ok(VariantAnalysis::default());
-        }
-        
-        let snps = variants.iter().filter(|v| v.is_snp()).count();
-        let insertions = variants.iter().filter(|v| v.is_insertion()).count();
-        let deletions = variants.iter().filter(|v| v.is_deletion()).count();
-        
-        // Calculate statistics
-        let snp_rate = snps as f64 / total as f64;
-        let indel_rate = (insertions + deletions) as f64 / total as f64;
-        
-        // Calculate quality distribution
-        let mean_quality = variants.iter()
-            .map(|v| v.quality)
-            .sum::<f64>() / total as f64;
+    /// Load a custom stop words file
+    pub fn load_stop_words<P: AsRef<Path>>(&mut self, language: &str, file_path: P) -> Result<()> {
+        let content = fs::read_to_string(file_path)?;
+        let words: HashSet<String> = content
+            .lines()
+            .map(|line| line.trim().to_string())
+            .filter(|line| !line.is_empty())
+            .collect();
             
-        let median_quality = {
-            let mut qualities: Vec<f64> = variants.iter().map(|v| v.quality).collect();
-            qualities.sort_by(|a, b| a.partial_cmp(b).unwrap());
-            if total % 2 == 0 {
-                (qualities[total/2 - 1] + qualities[total/2]) / 2.0
-            } else {
-                qualities[total/2]
+        self.stop_words.insert(language.to_string(), words);
+        Ok(())
+    }
+    
+    /// Load a custom sentiment lexicon
+    pub fn load_sentiment_lexicon<P: AsRef<Path>>(&mut self, file_path: P) -> Result<()> {
+        let content = fs::read_to_string(file_path)?;
+        
+        for line in content.lines() {
+            let parts: Vec<&str> = line.split('\t').collect();
+            if parts.len() >= 2 {
+                if let Ok(score) = parts[1].parse::<f64>() {
+                    self.sentiment_lexicon.insert(parts[0].to_string(), score);
+                }
             }
+        }
+        
+        Ok(())
+    }
+    
+    /// Detect the language of a document (simplified)
+    pub fn detect_language(&self, document: &Document) -> LanguageDetection {
+        // This is a simplified implementation
+        // In production, you would use a more sophisticated algorithm or library
+        
+        // For demonstration, we'll just assume English
+        LanguageDetection {
+            language: "en".to_string(),
+            confidence: 0.95,
+        }
+    }
+    
+    /// Analyze the sentiment of a document
+    pub fn analyze_sentiment(&self, document: &Document) -> Sentiment {
+        let words: Vec<String> = document.content
+            .to_lowercase()
+            .split(|c: char| !c.is_alphanumeric())
+            .filter(|s| !s.is_empty())
+            .map(String::from)
+            .collect();
+            
+        let mut score = 0.0;
+        let mut count = 0;
+        
+        for word in words {
+            if let Some(word_score) = self.sentiment_lexicon.get(&word) {
+                score += word_score;
+                count += 1;
+            }
+        }
+        
+        if count == 0 {
+            return Sentiment::Neutral;
+        }
+        
+        let avg_score = score / count as f64;
+        
+        if avg_score > 0.2 {
+            Sentiment::Positive
+        } else if avg_score < -0.2 {
+            Sentiment::Negative
+        } else {
+            Sentiment::Neutral
+        }
+    }
+    
+    /// Calculate readability score (simplified Flesch-Kincaid)
+    pub fn calculate_readability(&self, document: &Document) -> f64 {
+        let word_count = document.word_count() as f64;
+        let sentence_count = document.sentence_count() as f64;
+        
+        if sentence_count == 0.0 || word_count == 0.0 {
+            return 0.0;
+        }
+        
+        // Simplified Flesch-Kincaid formula
+        206.835 - 1.015 * (word_count / sentence_count)
+    }
+    
+    /// Perform full text analysis on a document
+    pub fn analyze(&self, document: &Document) -> Result<TextAnalysis> {
+        let word_count = document.word_count();
+        let char_count = document.char_count();
+        let sentence_count = document.sentence_count();
+        
+        let avg_words_per_sentence = if sentence_count > 0 {
+            word_count as f64 / sentence_count as f64
+        } else {
+            0.0
         };
         
-        Ok(VariantAnalysis {
-            total_variants: total,
-            snp_count: snps,
-            insertion_count: insertions,
-            deletion_count: deletions,
-            snp_rate,
-            indel_rate,
-            mean_quality,
-            median_quality,
+        let language = self.detect_language(document);
+        let sentiment = self.analyze_sentiment(document);
+        
+        let stop_words = self.stop_words.get(&language.language)
+            .ok_or_else(|| anyhow!("Stop words not available for language: {}", language.language))?;
+            
+        let keywords = document.extract_keywords(stop_words, 10);
+        let readability_score = self.calculate_readability(document);
+        
+        Ok(TextAnalysis {
+            document_id: document.id.clone(),
+            word_count,
+            char_count,
+            sentence_count,
+            avg_words_per_sentence,
+            language,
+            sentiment,
+            keywords,
+            readability_score,
         })
+    }
+    
+    /// Batch analyze multiple documents in parallel
+    pub fn batch_analyze(&self, documents: &[Document]) -> Result<Vec<TextAnalysis>> {
+        documents.par_iter()
+            .map(|doc| self.analyze(doc))
+            .collect()
     }
 }
 
-/// Results of sequence analysis
-#[derive(Debug, Serialize, Deserialize)]
-pub struct SequenceAnalysis {
-    /// ID of the analyzed sequence
-    pub sequence_id: String,
-    /// Length of the sequence
-    pub length: usize,
-    /// GC content percentage
-    pub gc_content: f64,
-    /// Counts of each nucleotide
-    pub nucleotide_counts: HashMap<char, usize>,
-    /// Whether sequence contains ambiguous bases (N)
-    pub has_ambiguous_bases: bool,
+/// NLP service to manage documents and analysis
+pub struct NlpService {
+    /// NLP processor for analysis
+    processor: NlpProcessor,
+    /// Document storage
+    documents: RwLock<HashMap<String, Arc<Document>>>,
+    /// Analysis cache
+    analysis_cache: RwLock<HashMap<String, Arc<TextAnalysis>>>,
 }
 
-/// Results of variant analysis
-#[derive(Debug, Serialize, Deserialize, Default)]
-pub struct VariantAnalysis {
-    /// Total number of variants
-    pub total_variants: usize,
-    /// Number of SNPs
-    pub snp_count: usize,
-    /// Number of insertions
-    pub insertion_count: usize,
-    /// Number of deletion count
-    pub deletion_count: usize,
-    /// Ratio of SNPs to total variants
-    pub snp_rate: f64,
-    /// Ratio of indels to total variants
-    pub indel_rate: f64,
-    /// Mean quality score
-    pub mean_quality: f64,
-    /// Median quality score
-    pub median_quality: f64,
+impl NlpService {
+    /// Create a new NLP service
+    pub fn new() -> Self {
+        Self {
+            processor: NlpProcessor::new(),
+            documents: RwLock::new(HashMap::new()),
+            analysis_cache: RwLock::new(HashMap::new()),
+        }
+    }
+    
+    /// Add or update a document
+    pub async fn add_document(&self, document: Document) -> Result<()> {
+        let id = document.id.clone();
+        
+        // Update document storage
+        {
+            let mut documents = self.documents.write().await;
+            documents.insert(id.clone(), Arc::new(document));
+        }
+        
+        // Invalidate cached analysis
+        {
+            let mut cache = self.analysis_cache.write().await;
+            cache.remove(&id);
+        }
+        
+        Ok(())
+    }
+    
+    /// Get a document by ID
+    pub async fn get_document(&self, id: &str) -> Result<Arc<Document>> {
+        let documents = self.documents.read().await;
+        documents.get(id)
+            .cloned()
+            .ok_or_else(|| anyhow!("Document not found: {}", id))
+    }
+    
+    /// Analyze a document by ID
+    pub async fn analyze_document(&self, id: &str) -> Result<Arc<TextAnalysis>> {
+        // Check cache first
+        {
+            let cache = self.analysis_cache.read().await;
+            if let Some(analysis) = cache.get(id) {
+                return Ok(analysis.clone());
+            }
+        }
+        
+        // Get the document
+        let document = self.get_document(id).await?;
+        
+        // Perform analysis
+        let analysis = self.processor.analyze(&document)?;
+        let analysis_arc = Arc::new(analysis);
+        
+        // Update cache
+        {
+            let mut cache = self.analysis_cache.write().await;
+            cache.insert(id.to_string(), analysis_arc.clone());
+        }
+        
+        Ok(analysis_arc)
+    }
+    
+    /// Find similar documents for a given document
+    pub async fn find_similar(&self, id: &str, min_similarity: f64) -> Result<Vec<(Arc<Document>, f64)>> {
+        let target_doc = self.get_document(id).await?;
+        let documents = self.documents.read().await;
+        
+        let mut similar: Vec<(Arc<Document>, f64)> = Vec::new();
+        
+        for (doc_id, doc) in documents.iter() {
+            if doc_id == id {
+                continue;
+            }
+            
+            let similarity = target_doc.similarity(doc);
+            if similarity >= min_similarity {
+                similar.push((doc.clone(), similarity));
+            }
+        }
+        
+        // Sort by similarity (descending)
+        similar.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        
+        Ok(similar)
+    }
 }
 
 #[cfg(test)]
@@ -228,30 +416,41 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_gc_content() {
-        let seq = Sequence::new("test", "ACGTACGT");
-        assert_eq!(seq.gc_content(), 50.0);
+    fn test_document_stats() {
+        let doc = Document::new(
+            "test", 
+            "Test Document", 
+            "This is a test document. It has three sentences! How many words does it contain?"
+        );
         
-        let seq2 = Sequence::new("gc_rich", "GCGCGCGC");
-        assert_eq!(seq2.gc_content(), 100.0);
+        assert_eq!(doc.word_count(), 15);
+        assert_eq!(doc.sentence_count(), 3);
     }
 
     #[test]
-    fn test_nucleotide_counts() {
-        let seq = Sequence::new("test", "ACGTACGT");
-        let counts = seq.nucleotide_counts();
-        assert_eq!(counts.get(&'A'), Some(&2));
-        assert_eq!(counts.get(&'C'), Some(&2));
-        assert_eq!(counts.get(&'G'), Some(&2));
-        assert_eq!(counts.get(&'T'), Some(&2));
+    fn test_similarity() {
+        let doc1 = Document::new("doc1", "Similar", "The quick brown fox jumps over the lazy dog");
+        let doc2 = Document::new("doc2", "Similar too", "The fox jumps over the lazy brown dog");
+        let doc3 = Document::new("doc3", "Different", "Lorem ipsum dolor sit amet");
+        
+        assert!(doc1.similarity(&doc2) > 0.7); // Similar documents
+        assert!(doc1.similarity(&doc3) < 0.1); // Different documents
     }
 
-    #[test]
-    fn test_is_snp() {
-        let snp = Variant::new("chr1", 100, "A", "G", 30.0);
-        assert!(snp.is_snp());
+    #[tokio::test]
+    async fn test_nlp_service() {
+        let service = NlpService::new();
         
-        let insertion = Variant::new("chr1", 100, "A", "AGT", 30.0);
-        assert!(!insertion.is_snp());
+        let doc = Document::new(
+            "test1", 
+            "Positive Document", 
+            "This is a great document with happy content. It's excellent!"
+        );
+        
+        service.add_document(doc).await.unwrap();
+        let analysis = service.analyze_document("test1").await.unwrap();
+        
+        assert_eq!(analysis.sentiment, Sentiment::Positive);
+        assert!(analysis.readability_score > 0.0);
     }
 }

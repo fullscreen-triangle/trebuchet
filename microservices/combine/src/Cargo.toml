@@ -1,0 +1,19 @@
+[package]
+name = "combine"
+version = "0.1.0"
+edition = "2021"
+description = "Microservice for Trebuchet that combines data from multiple sources"
+authors = ["Kundai Sachikonye"]
+license = "MIT"
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+trebuchet-core = { path = "../../trebuchet-core" }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

@@ -2,19 +2,44 @@
 name = "moriarty"
 version = "0.1.0"
 edition = "2021"
-description = "Security and cryptography microservice for Trebuchet"
+description = "Sports video analysis microservice for Trebuchet using computer vision and AI"
 authors = ["Kundai Sachikonye"]
 license = "MIT"
+
+[lib]
+path = "lib.rs"
 
 [dependencies]
 trebuchet-core = { path = "../../trebuchet-core" }
 tokio = { workspace = true }
 anyhow = { workspace = true }
+thiserror = { workspace = true }
 tracing = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-hex = "0.4.3"
-thiserror = { workspace = true }
-chrono = { version = "0.4", features = ["serde"] }
+ndarray = { workspace = true }
+rayon = { workspace = true }
+
+# Computer vision and machine learning
+opencv = { version = "0.84", default-features = false, features = ["imgproc", "videoio", "highgui", "tracking", "dnn"] }
+tch = "0.14"               # PyTorch bindings
+tract-onnx = "0.20"        # ONNX runtime
+
+# Data processing
+nalgebra = "0.32"          # Linear algebra
+polars = "0.34"            # DataFrame library
 rand = "0.8"
+
+# Concurrency and optimization
+dashmap = "5.5"            # Thread-safe hashmap
+num_cpus = "1.16"          # CPU count detection
+psutil = "3.2"             # System resource monitoring
+
+# Visualization
+plotters = "0.3"           # Plotting library
+imageproc = "0.23"         # Image processing
+image = "0.24"             # Image library
+
+# Utils
 async-trait = "0.1"
+uuid = { version = "1.4", features = ["v4", "serde"] }
