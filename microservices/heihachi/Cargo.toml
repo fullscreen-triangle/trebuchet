@@ -7,7 +7,7 @@ authors = ["Kundai Sachikonye"]
 license = "MIT"
 
 [lib]
-path = "lib.rs"
+path = "src/lib.rs"
 
 [dependencies]
 trebuchet-core = { path = "../../trebuchet-core" }
@@ -24,4 +24,4 @@ rand = "0.8"
 [dev-dependencies]
 tokio = { workspace = true }
 anyhow = { workspace = true }
-thiserror = { workspace = true }
+thiserror = { workspace = true } 

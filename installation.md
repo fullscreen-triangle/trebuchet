@@ -331,11 +331,11 @@ services:
   gospel:
     enabled: true
     threads: 4
-    
+  
   purpose:
     enabled: true
     batch_size: 1024
-    
+  
   combine:
     enabled: true
     model_registry: local
@@ -345,7 +345,7 @@ communication:
   message_bus:
     type: tokio-channel
     buffer_size: 1000
-    
+  
   api_gateway:
     host: 127.0.0.1
     port: 8080

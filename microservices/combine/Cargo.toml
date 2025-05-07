@@ -2,11 +2,31 @@
 name = "combine"
 version = "0.1.0"
 edition = "2021"
+description = "Data integration and fusion microservice for Trebuchet"
+authors = ["Kundai Sachikonye"]
+license = "MIT"
+
+[lib]
+path = "src/lib.rs"
 
 [dependencies]
-anyhow = "1.0"
-tokio = { version = "1", features = ["full"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+trebuchet-core = { path = "../../trebuchet-core" }
+tokio = { workspace = true, features = ["full"] }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+futures = "0.3"
+async-trait = "0.1"
+chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
-async-trait = "0.1" 
+indexmap = { version = "1.9", features = ["serde"] }
+dashmap = "5.4"
+ndarray = { version = "0.15", features = ["serde"] }
+csv = "1.1"
+rust_decimal = { version = "1.27", features = ["serde"] }
+
+[dev-dependencies]
+tokio-test = "0.4"
+mockall = "0.11" 
